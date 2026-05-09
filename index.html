@@ -5007,7 +5007,7 @@ const DEFAULTS = {
   density: 'normal',
   mode: 'dark',
   effects: { cursor: true, scanlines: false, vignette: true, glitch: true },
-  order: ['hero','services','recent','how','contact'],
+  order: ['hero','services','recent','stack','how','contact'],
   _migrations: { scanlinesOff: true },
 };
 const STORE_KEY = 'mecke.dev:playground:v1';
@@ -5018,12 +5018,26 @@ function loadState() {
     if (!s) return structuredClone(DEFAULTS);
     const merged = Object.assign(structuredClone(DEFAULTS), s,
       { effects: Object.assign({}, DEFAULTS.effects, s.effects || {}) });
-    // one-time: turn off scanlines for users with stale state where they were on by default
+    
     const mig = s._migrations || {};
+    
+    // one-time: turn off scanlines for users with stale state where they were on by default
     if (!mig.scanlinesOff) {
       merged.effects.scanlines = false;
-      merged._migrations = Object.assign({}, mig, { scanlinesOff: true });
+      mig.scanlinesOff = true;
     }
+    
+    // one-time: fix missing 'stack' in section order
+    if (!mig.stackOrderFix && Array.isArray(merged.order)) {
+      if (!merged.order.includes('stack')) {
+        const idx = merged.order.indexOf('recent');
+        const insertAt = idx >= 0 ? idx + 1 : merged.order.length;
+        merged.order.splice(insertAt, 0, 'stack');
+      }
+      mig.stackOrderFix = true;
+    }
+    
+    merged._migrations = mig;
     return merged;
   } catch (e) { return structuredClone(DEFAULTS); }
 }
